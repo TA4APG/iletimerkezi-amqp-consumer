@@ -3,8 +3,12 @@ package main
 import (
 	"consumer-sms/src"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"strings"
+
+	. "github.com/ahmetb/go-linq/v3"
 )
 
 func main() {
@@ -23,19 +27,41 @@ func main() {
 		false,                                  // no-wait
 		nil,                                    // args
 	)
-	src.FailOnError(err, "Failed to register a consumer")
+
+	if src.FailOnError(err, "Failed registration to amqp") {
+		os.Exit(1)
+	}
+
+	mAdrs := src.GetConfigString("MODEL_ADDRESSES")
+	mMsgs := src.GetConfigString("MODEL_MESSAGES")
 
 	forever := make(chan bool)
 	go func() {
 		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
-			var m = src.Message{}
+			var m map[string]interface{}
 			json.Unmarshal(d.Body, &m)
-			for _, msg := range m.Messages {
-				req := SendRequest(m.Addresses, msg)
-				src.SendSms(req)
-			}
 
+			//Single
+			valAddress, err := src.NestedMapLookup(m, strings.Split(mAdrs, ".")...)
+			src.FailOnError(err, "Hata")
+
+			valMessage, err := src.NestedMapLookup(m, strings.Split(mMsgs, ".")...)
+
+			src.FailOnError(err, "Hata")
+
+			var targetAddresses []string
+			From(valAddress).ToSlice(&targetAddresses)
+
+			for _, v := range valMessage.([]interface{}) {
+				message := v.(string)
+				body := MakeBody(targetAddresses, message)
+				result := src.SendSms(body)
+
+				logStr := fmt.Sprintf("Message: %s, target: %s", message, strings.Join(targetAddresses, ", "))
+				if result == true {
+					fmt.Printf("Success: %s", logStr)
+				}
+			}
 			src.Channel.Ack(d.DeliveryTag, false)
 		}
 	}()

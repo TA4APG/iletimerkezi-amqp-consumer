@@ -2,7 +2,6 @@ package src
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/viper"
@@ -19,39 +18,52 @@ func GetConfigBool(key string) bool {
 }
 
 func ViperConfigure() {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+
+	viper.SetConfigName("iletimerkezi-worker")
 	viper.SetConfigType("yaml")
+	viper.AddConfigPath("/run/secrets/")
+	viper.AddConfigPath("/etc/iletimerkezi-worker/")
+	viper.AddConfigPath("$HOME/.iletimerkezi-worker")
+	viper.AddConfigPath(".")
 	viper.AutomaticEnv()
 
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading config file, %s", err)
+	viper.ReadInConfig()
+	err := viper.MergeInConfig()
+
+	if err != nil {
+		panic(fmt.Errorf("Fatal error config file: %w \n", err))
 	}
 
 	viper.SetDefault("AMQP_MANDATORY", false)
 	viper.SetDefault("AMQP_IMMEDIATE", false)
 
-	viper.SetDefault("AMQP_QUEUE_NAME", "sms")
 	viper.SetDefault("AMQP_QUEUE_DURABLE", true)
 	viper.SetDefault("AMQP_QUEUE_AUTO_DELETE", false)
 	viper.SetDefault("AMQP_QUEUE_EXCLUSIVE", false)
 	viper.SetDefault("AMQP_QUEUE_NO_WAIT", false)
 
-	viper.SetDefault("AMQP_CONNECTIONSTRING", "amqp://guest:guest@127.0.0.1")
-
-	viper.SetDefault("REQUEST_URL", "http://127.0.0.1")
+	viper.SetDefault("REQUEST_METHODS", "POST")
 	viper.SetDefault("REQUEST_ADDRESS_KEY", "address")
 	viper.SetDefault("REQUEST_MESSAGE_KEY", "message")
 
 	viper.SetDefault("MESSAGE_FOOTER", "")
+	viper.SetDefault("REQUEST_URL", "https://api.iletimerkezi.com/v1/send-sms/json")
 
-	_, ok := viper.Get("REQUEST_URL").(string)
+	RequireConf("AMQP_CONNECTIONSTRING")
+	RequireConf("AMQP_QUEUE_NAME")
+	RequireConf("MODEL_ADDRESSES")
+	RequireConf("MODEL_MESSAGES")
+	RequireConf("ILETIMERKEZI_SENDER")
+	RequireConf("ILETIMERKEZI_IYS")
+	// RequireConf("ILETIMERKEZI_IYSLIST")
+	RequireConf("ILETIMERKEZI_KEY")
+	RequireConf("ILETIMERKEZI_HASH")
+}
+
+func RequireConf(key string) {
+	_, ok := viper.Get(key).(string)
 	if !ok {
-		log.Fatalf("REQUEST_URL is required")
-	}
-	_, ok = viper.Get("AMQP_QUEUE_NAME").(string)
-	if !ok {
-		log.Fatalf("AMQP_QUEUE_NAME is required")
+		panic(fmt.Errorf("Parameter has required: %s \n", key))
 	}
 }
 

@@ -2,6 +2,7 @@
 # STEP 1 build executable binary
 ############################
 FROM golang:alpine AS build
+RUN apk add git
 WORKDIR /go/build
 COPY go.mod .
 RUN go mod download

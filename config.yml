@@ -1,13 +1,13 @@
 REQUEST_URL: https://api.iletimerkezi.com/v1/send-sms/json
+# ILETIMERKEZI_SENDER: ""
+# ILETIMERKEZI_IYS: "0"
+# ILETIMERKEZI_IYSLIST:
+# ILETIMERKEZI_KEY: ""
+# ILETIMERKEZI_HASH: ""
 
-STATIC_PARAMS:
-  sender: ""
-  iys: "0"
-  # iysList: ""
-  key: ""
-  hash: ""
+# MODEL_ADDRESSES: ""
+# MODEL_MESSAGES: ""
 
-AMQP_QUEUE_NAME: sms
+# AMQP_CONNECTIONSTRING: "amqp://guest:guest@127.0.0.1"
+# AMQP_QUEUE_NAME: "sms"
 # MESSAGE_FOOTER: ""
-
-# AMQP_CONNECTIONSTRING: amqp://guest:guest@amqpcontainer

@@ -6,37 +6,32 @@ var bodyBase src.IletiMerkeziSms
 var footerMsg string
 
 func RequestSetup() {
-	StaticParams, ok := src.GetConfig("STATIC_PARAMS").(map[string]interface{})
+	sender := src.GetConfigString("ILETIMERKEZI_SENDER")
+	iys := src.GetConfigString("ILETIMERKEZI_IYS")
+	iyslist := src.GetConfig("ILETIMERKEZI_IYSLIST")
+	key := src.GetConfigString("ILETIMERKEZI_KEY")
+	hash := src.GetConfigString("ILETIMERKEZI_HASH")
+
 	footerMsg = src.GetConfigString("MESSAGE_FOOTER")
-	if !ok {
-		src.FailOnError(nil, "Parameters not found")
-	}
 
 	bodyBase = src.IletiMerkeziSms{Request: src.IMRequest{
 		Authentication: src.IMAuthentication{
-			Key:  StaticParams["key"].(string),
-			Hash: StaticParams["hash"].(string),
+			Key:  key,
+			Hash: hash,
 		},
 		Order: src.IMOrder{
-			Sender: StaticParams["sender"].(string),
+			Sender: sender,
+			Iys:    iys,
 		},
 	}}
-	iys, ok := StaticParams["iys"]
-	if ok {
-		bodyBase.Request.Order.Iys = iys.(string)
-	}
-	iysList, ok := StaticParams["iysList"]
-	if ok {
-		bodyBase.Request.Order.IysList = iysList.(string)
-	} else {
-		bodyBase.Request.Order.IysList = ""
+	if iyslist != nil {
+		bodyBase.Request.Order.IysList = iyslist.(string)
 	}
 }
 
-func SendRequest(addresses []string, message string) *src.IletiMerkeziSms {
-
+// Http requestin bodysine parametreleri girer ve mesaja footer ekler
+func MakeBody(addresses []string, message string) *src.IletiMerkeziSms {
 	body := bodyBase
-	// body := bodyBase
 	body.Request.Order.Message.Receipents.Number = addresses
 	body.Request.Order.Message.Text = message + footerMsg
 
